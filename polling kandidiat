@@ -1,71 +1,301 @@
+<!DOCTYPE html>
 <html lang="id">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Polling Kandidat</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Polling Kandidat</title>
 
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
 
-<!-- Google Fonts -->
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: "Inter", sans-serif;
+      background: #f3f4f6;
+      margin: 0;
+      padding: 0;
+      color: #111;
+    }
 
+    header {
+      background: white;
+      padding: 20px 30px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
 
-<style>
-body {
-font-family: "Inter", sans-serif;
-background: #f3f4f6;
-margin: 0;
-padding: 0;
-color: #111;
-}
+    .container {
+      max-width: 900px;
+      margin: 30px auto;
+      background: white;
+      padding: 25px;
+      border-radius: 14px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
 
+    h2 { margin-top: 0; }
 
-header {
-background: white;
-padding: 20px 30px;
-box-shadow: 0 2px 6px rgba(0,0,0,0.06);
-display: flex;
-justify-content: space-between;
-align-items: center;
-position: sticky;
-top: 0;
-z-index: 100;
-}
+    input, button, select {
+      font-family: inherit;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid #d1d5db;
+      width: 100%;
+      box-sizing: border-box;
+      margin-top: 6px;
+    }
 
+    button {
+      cursor: pointer;
+      font-weight: 600;
+      border: none;
+    }
 
-.container {
-max-width: 900px;
-margin: 30px auto;
-background: white;
-padding: 25px;
-border-radius: 14px;
-box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-}
+    .btn-primary {
+      background: #2563eb;
+      color: white;
+    }
+    .btn-primary:hover { background: #1d4ed8; }
 
+    .btn-danger {
+      background: #dc2626;
+      color: white;
+    }
 
-h2 { margin-top: 0; }
+    .candidate-card {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 12px;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      margin-bottom: 10px;
+    }
 
+    .candidate-card img {
+      width: 70px;
+      height: 70px;
+      object-fit: cover;
+      border-radius: 10px;
+    }
 
-input, button, select {
-font-family: inherit;
-padding: 10px;
-border-radius: 8px;
-border: 1px solid #d1d5db;
-width: 100%;
-box-sizing: border-box;
-margin-top: 6px;
-}
+    .hidden { display: none; }
 
+    .result-bar {
+      background: #d1d5db;
+      width: 100%;
+      height: 18px;
+      border-radius: 10px;
+      overflow: hidden;
+      margin-top: 6px;
+    }
+    .result-bar-fill {
+      background: #2563eb;
+      height: 100%;
+    }
+  </style>
+</head>
+<body>
 
-button {
-cursor: pointer;
-font-weight: 600;
-border: none;
-}
+<header>
+  <h2>Polling Kandidat</h2>
+  <nav>
+    <button onclick="showPage('admin')">Admin</button>
+    <button onclick="showPage('poll')">Polling</button>
+    <button onclick="showPage('results')">Hasil</button>
+  </nav>
+</header>
 
+<div class="container" id="adminPage">
+  <h2>Halaman Admin</h2>
+  <label>Judul Poll:<input id="pollTitle" placeholder="Contoh: Pemilihan Ketua"></label>
 
-.btn-primary {
-background: #2563eb;
-color: white;
+  <h3>Tambah Kandidat</h3>
+  <label>Nama Kandidat:<input id="candidateName"></label>
+  <label>Foto Kandidat:<input type="file" id="candidatePhoto"></label>
+  <button class="btn-primary" onclick="addCandidate()">Tambah</button>
+
+  <h3>Daftar Kandidat:</h3>
+  <div id="candidateList"></div>
+
+  <button class="btn-primary" onclick="publishPoll()">Publikasi Poll</button>
+</div>
+
+<div class="container hidden" id="pollPage">
+  <h2 id="pollTitleDisplay"></h2>
+  <div id="pollCandidates"></div>
+</div>
+
+<div class="container hidden" id="resultsPage">
+  <h2>Hasil Poll</h2>
+  <div id="resultsList"></div>
+</div>
+
+<script>
+  let poll = {
+    title: "",
+    candidates: []
+  };
+
+  function showPage(page) {
+    document.getElementById("adminPage").classList.add("hidden");
+    document.getElementById("pollPage").classList.add("hidden");
+    document.getElementById("resultsPage").classList.add("hidden");
+
+    if (page === "admin") document.getElementById("adminPage").classList.remove("hidden");
+    if (page === "poll") document.getElementById("pollPage").classList.remove("hidden");
+    if (page === "results") document.getElementById("resultsPage").classList.remove("hidden");
+  }
+
+  async function addCandidate() {
+    const name = document.getElementById("candidateName").value.trim();
+    const photoFile = document.getElementById("candidatePhoto").files[0];
+
+    if (!name || !photoFile) return alert("Nama dan foto wajib diisi.");
+
+    const base64 = await toBase64(photoFile);
+
+    const candidate = {
+      id: Date.now(),
+      name,
+      photo: base64,
+      votes: 0
+    };
+
+    poll.candidates.push(candidate);
+    renderCandidateList();
+
+    document.getElementById("candidateName").value = "";
+    document.getElementById("candidatePhoto").value = "";
+  }
+
+  function renderCandidateList() {
+    const list = document.getElementById("candidateList");
+    list.innerHTML = "";
+
+    poll.candidates.forEach(c => {
+      list.innerHTML += `
+        <div class='candidate-card'>
+          <img src='${c.photo}' />
+          <div style='flex:1;'>${c.name}</div>
+          <button class='btn-danger' onclick='removeCandidate(${c.id})'>Hapus</button>
+        </div>`;
+    });
+  }
+
+  function removeCandidate(id) {
+    poll.candidates = poll.candidates.filter(c => c.id !== id);
+    renderCandidateList();
+  }
+
+  function publishPoll() {
+    const title = document.getElementById("pollTitle").value.trim();
+    if (!title) return alert("Judul wajib diisi.");
+    if (poll.candidates.length === 0) return alert("Minimal 1 kandidat.");
+
+    poll.title = title;
+    alert("Poll berhasil dibuat! Buka tab Polling atau Hasil.");
+
+    loadPollPage();
+    loadResultsPage();
+  }
+
+  function loadPollPage() {
+    document.getElementById("pollTitleDisplay").innerText = poll.title;
+    const area = document.getElementById("pollCandidates");
+    area.innerHTML = "";
+
+    poll.candidates.forEach(c => {
+      area.innerHTML += `
+      <div class='candidate-card'>
+        <img src='${c.photo}' />
+        <div style='flex:1;'>${c.name}</div>
+        <button class='btn-primary' onclick='vote(${c.id})'>Pilih</button>
+      </div>`;
+    });
+  }
+
+  function vote(id) {
+    poll.candidates = poll.candidates.map(c => {
+      if (c.id === id) c.votes++;
+      return c;
+    });
+    alert("Terima kasih sudah memilih!");
+    loadResultsPage();
+  }
+
+  function loadResultsPage() {
+    const area = document.getElementById("resultsList");
+    area.innerHTML = "";
+
+    const total = poll.candidates.reduce((a,b) => a + b.votes, 0);
+
+    poll.candidates.forEach(c => {
+      const percent = total === 0 ? 0 : Math.round((c.votes / total) * 100);
+
+      area.innerHTML += `
+        <div style='margin-bottom:18px;'>
+          <strong>${c.name} — ${c.votes} suara (${percent}%)</strong>
+          <div class='result-bar'>
+            <div class='result-bar-fill' style='width:${percent}%;'></div>
+          </div>
+        </div>`;
+    });
+  }
+
+  function toBase64(file) {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.readAsDataURL(file);
+    });
+  }
+  // --- Short Link Generator ---
+  function makeShortLink(url) {
+    // simple base64 encoding as demo (not secure)
+    return window.location.origin + '/#s=' + btoa(url);
+  }
+
+  // Show short links after poll creation
+  document.addEventListener('pollCreated', (e) => {
+    const { pollUrl, resultUrl } = e.detail;
+    const shortPoll = makeShortLink(pollUrl);
+    const shortResult = makeShortLink(resultUrl);
+    const box = document.getElementById('short-links');
+    box.innerHTML = `
+      <h3>Short Links</h3>
+      <p>Polling: <a href="${shortPoll}" target="_blank">${shortPoll}</a></p>
+      <p>Hasil: <a href="${shortResult}" target="_blank">${shortResult}</a></p>`;
+  });
+</script>
+
+  <!-- Sidebar Copy Menu -->
+  <div id="copy-menu" style="position:fixed; left:20px; top:50%; transform:translateY(-50%); background:rgba(255,255,255,0.4); backdrop-filter:blur(10px); padding:16px; border-radius:12px; box-shadow:0 4px 12px rgba(0,0,0,0.15); z-index:999; font-family:Arial;">
+    <h4 style="margin-top:0; font-size:14px; font-weight:bold;">Bagikan</h4>
+    <button id="copy-poll" style="display:block; margin-bottom:10px; padding:8px 12px; border:none; border-radius:8px; cursor:pointer;">Salin Link Polling</button>
+    <button id="copy-result" style="display:block; padding:8px 12px; border:none; border-radius:8px; cursor:pointer;">Salin Link Hasil</button>
+  </div>
+
+  <script>
+    function copyText(text) {
+      navigator.clipboard.writeText(text);
+    }
+
+    document.addEventListener('pollCreated', (e) => {
+      const { pollUrl, resultUrl } = e.detail;
+      const shortPoll = makeShortLink(pollUrl);
+      const shortResult = makeShortLink(resultUrl);
+
+      document.getElementById('copy-poll').onclick = () => copyText(shortPoll);
+      document.getElementById('copy-result').onclick = () => copyText(shortResult);
+    });
+  </script>
+</body>
 </html>
